@@ -41,8 +41,10 @@ def extract_bytes(content):
 
 
 def extract_review_page(b, n, after_id=""):
-    after_id_part = "" if not after_id else "3s" + after_id
-    url = f"https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=en&gl=hk&pb=!1m2!1y{n[0]}!2y{n[1]}!2m1!2i10!{after_id_part}3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1s{b}A0!7e81"
+    after_id_part = "" if not after_id else "3s" + after_id.replace("=", "%3D") + "!"
+    mark = "2m1" if not after_id else "2m2"
+    url = f"https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=en&gl=hk&pb=!1m2!1y{n[0]}!2y{n[1]}!{mark}!2i10!{after_id_part}3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1s{b}A0!7e81"
+    print(url)
     rep = requests.get(url)
     reviews = json.loads(rep.content[5:])[2]
     return [
@@ -55,7 +57,8 @@ def extract_review_page(b, n, after_id=""):
             "owner_replied": bool(review[9]),
             "owner_reply": "" if not bool(review[9]) else review[9][1],
         }
-        for review in reviews if review
+        for review in reviews
+        if review
     ], reviews[-1][61] if reviews and len(reviews[-1]) > 61 else None
 
 
@@ -67,7 +70,7 @@ def extract_all_reviews(b, n):
         while True:
             new_page, next_after_id = extract_review_page(b, n, after_id)
             reviews.extend(new_page)
-            print(f'Got page number {counter} with {len(new_page)} reviews.')
+            print(f"Got page number {counter} with {len(new_page)} reviews.")
             if not next_after_id:
                 break
             time.sleep(1)
@@ -79,11 +82,11 @@ def extract_all_reviews(b, n):
         return reviews
 
 
-def export_to_csv(reviews, file_name='result.csv'):
+def export_to_csv(reviews, file_name="result.csv"):
     if not reviews:
         return
     keys = reviews[0].keys()
-    with open(file_name, 'w', newline='') as f:
+    with open(file_name, "w", newline="") as f:
         dict_writer = csv.DictWriter(f, keys)
         dict_writer.writeheader()
         dict_writer.writerows(reviews)
